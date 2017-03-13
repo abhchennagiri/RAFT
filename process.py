@@ -3,7 +3,7 @@ import socket
 import sys
 import Queue as Q
 import pickle
-from message import Message,RequestVoteData
+from message import Message, RequestVoteData, AppendEntriesData
 import time
 from datetime import datetime
 import threading
@@ -152,6 +152,7 @@ class Datacenter( SocketServer.TCPServer ):
         self.currentTerm = 1
         self.votedFor = {}
         self.log = []
+        # Index of highest entry known to be committed
         self.commitIndex = 0
         self.lastLogIndex = 0
         self.lastLogTerm = 0
@@ -249,6 +250,11 @@ class Datacenter( SocketServer.TCPServer ):
         req_data = RequestVoteData( self.pid, self.currentTerm, self.lastLogIndex, self.lastLogTerm )
         return req_data
 
+    def form_append_entries_data( self ):
+        logger.debug("Entering form request message")
+        append_entry_data = AppendEntriesData( self.pid, self.currentTerm, self.prevLogIndex, self.prevLogTerm, self.commitIndex )    
+        return append_entry_data
+
     def change_to_follower( self ):
         if self.state != FOLLOWER:
             self.state == FOLLOWER
@@ -265,14 +271,26 @@ class Datacenter( SocketServer.TCPServer ):
             self.state = LEADER
             self.leaderId = self.pid
             #TODO: Update the follower details
-            self.sendAppendEntriesRPC()
+            self.send_append_entries_to_all()
             self.reset_heartbeat_timer()
-            self
+            #self
         pass    
     
-    def sendAppendEntriesRPC( self ):
-        pass
-
+    def send_append_entries( self, to_dc, data ):
+        """
+        Send appendEntries to all the peers. Serves as a heartbeat message also.
+        """
+        from_dc = ( IP, int( D_PORTS[ self.pid - 1 ] ) )
+        msg = Message( Message.APPENDENTRIES, from_dc, to_dc, 1, data )
+        self.send_message( msg ) 
+    
+    def send_append_entries_to_all( self ):
+        from_dc = ( IP, int( D_PORTS[ self.pid - 1 ] ) )
+        data = self.form_append_entries_data( )           
+        for port in D_PORTS:
+            if port != int( from_dc[ 1 ] ):
+                to_dc = ( IP, port )
+                self.send_append_entries( to_dc, data )
 
 
 

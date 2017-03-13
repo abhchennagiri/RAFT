@@ -42,7 +42,7 @@ class Message(object):
     def type(self):
         return self.message_type
 
-class RequestVoteData(object):
+class RequestVoteData( object ):
     def __init__( self, pid, currentTerm, lastLogIndex, lastLogTerm):
         self.candidateId = pid
         self.currentTerm = currentTerm
@@ -59,6 +59,28 @@ class RequestVoteData(object):
         self.term = term
         self.voteGranted = voteGranted
         pass    
+
+class AppendEntriesData( object ):
+    def __init__( self, pid, currentTerm, prevLogIndex, prevLogTerm, commitIndex, entries = None ):
+        self.leaderId = pid
+        self.currentTerm = currentTerm
+        self.prevLogIndex = prevLogIndex
+        self.prevLogTerm = prevLogTerm
+        self.entries = entries
+        self.commitIndex = commitIndex
+        #Results
+        self.term = 0
+        self.success  = False
+
+
+    def set_results( self, term, result ):
+        """
+        This function implements the results in the AppendVoteRPC.
+        """
+        self.term = term
+        self.success = result
+        pass        
+
 
 
 if __name__ == '__main__':
